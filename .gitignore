@@ -27,6 +27,7 @@ autom4te.cache
 *.pdf
 *.ps
 *~
+.*swp
 .*~
 .deps
 .dirstamp
