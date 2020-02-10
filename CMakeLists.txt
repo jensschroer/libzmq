@@ -1,11 +1,20 @@
 # CMake build script for ZeroMQ
 project(ZeroMQ)
 
+# Detect the platform reliably
+if(ZEPHYR_BASE)
+    SET(ZEPHYR YES)
+endif()
+
 if(${CMAKE_SYSTEM_NAME} STREQUAL Darwin)
   cmake_minimum_required(VERSION 3.0.2)
+elseif(ZEPHYR)
+  cmake_minimum_required(VERSION 3.13.1)
 else()
   cmake_minimum_required(VERSION 2.8.12)
 endif()
+
+
 
 include(CheckIncludeFiles)
 include(CheckCCompilerFlag)
@@ -31,7 +40,107 @@ include(ZMQSupportMacros)
 
 find_package(PkgConfig)
 
+#---------------------------------------------------------------------------------
+# All options go there
 option(ENABLE_ASAN "Build with address sanitizer" OFF)
+
+option(ENABLE_INTRINSICS "Build using compiler intrinsics for atomic ops" OFF)
+
+option(WITH_OPENPGM "Build with support for OpenPGM" OFF)
+option(WITH_VMCI "Build with support for VMware VMCI socket" OFF)
+
+if(APPLE)
+  option(ZMQ_BUILD_FRAMEWORK "Build as OS X framework" OFF)
+endif()
+
+if(EXISTS "${SOURCE_DIR}/.git")
+  option(ENABLE_DRAFTS "Build and install draft classes and methods" ON)
+else()
+  option(ENABLE_DRAFTS "Build and install draft classes and methods" OFF)
+endif()
+
+# Enable webSocket transport
+if (ENABLE_DRAFTS)
+  option(ENABLE_WS "Enable WebSocket transport" ON)
+  option(ENABLE_RADIX_TREE "Use radix tree implementation to manage subscriptions" ON)
+else()  
+  option(ENABLE_WS "Enable WebSocket transport" OFF)
+  option(ENABLE_RADIX_TREE "Use radix tree implementation to manage subscriptions" OFF)
+endif()
+
+option(WITH_NSS "Use NSS instead of builtin sha1" OFF)
+
+if(NOT MSVC)
+  option(WITH_LIBBSD "Use libbsd instead of builtin strlcpy" ON)
+endif()
+
+# Select curve encryption library, defaults to tweetnacl
+# To use libsodium instead, use --with-libsodium(must be installed)
+# To disable curve, use --disable-curve
+
+option(WITH_LIBSODIUM "Use libsodium instead of built-in tweetnacl" OFF)
+option(ENABLE_CURVE "Enable CURVE security" ON)
+
+option(WITH_MILITANT "Enable militant assertions" OFF)
+
+option(ENABLE_EVENTFD "Enable/disable eventfd" ZMQ_HAVE_EVENTFD)
+
+option(ENABLE_ANALYSIS "Build with static analysis(make take very long)" OFF)
+
+option(LIBZMQ_PEDANTIC "" ON)
+option(LIBZMQ_WERROR "" OFF)
+
+option(ENABLE_PRECOMPILED "Enable precompiled headers, if possible" ON)
+
+option(BUILD_SHARED "Whether or not to build the shared object"  ON)
+option(BUILD_STATIC "Whether or not to build the static archive" ON)
+
+option(WITH_DOCS "Build html docs" ON)
+
+option(BUILD_TESTS "Whether or not to build the tests" ON)
+
+option(ENABLE_CPACK "Enables cpack rules" ON)
+#---------------------------------------------------------------------------------
+
+
+
+#---------------------------------------------------------------------------------
+# Zephyr configs
+if (ZEPHYR)
+  # This policy is needed to override options with variables
+  cmake_policy(SET CMP0077 NEW)
+  
+  # configure what is supported in Zephyr
+  set(ENABLE_ASAN OFF)
+  set(ENABLE_INTRINSICS OFF)
+  set(WITH_OPENPGM OFF)
+  set(WITH_VMCI OFF)
+  set(ZMQ_BUILD_FRAMEWORK OFF)
+  set(ENABLE_DRAFTS OFF)
+  set(ENABLE_WS OFF)
+  set(ENABLE_RADIX_TREE OFF)
+  set(WITH_NSS OFF)
+  set(WITH_LIBBSD OFF)
+  set(WITH_LIBSODIUM OFF)
+  set(ENABLE_CURVE ON)
+  set(WITH_MILITANT OFF)
+  set(ENABLE_ANALYSIS OFF)
+  set(LIBZMQ_PEDANTIC ON)
+  set(LIBZMQ_WERROR OFF)
+  set(ENABLE_PRECOMPILED ON)
+  set(BUILD_SHARED  OFF)
+  set(BUILD_STATIC ON)
+  set(WITH_DOCS OFF)
+  set(BUILD_TESTS OFF)
+  set(ENABLE_CPACK OFF)
+  set(ZMQ_HAVE_IPC OFF)
+  
+endif()
+
+  
+
+#---------------------------------------------------------------------------------
+
 if(ENABLE_ASAN)
   message(STATUS "Instrumenting with Address Sanitizer")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer")
@@ -40,7 +149,6 @@ if(ENABLE_ASAN)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address -fsanitize-address-use-after-scope")
 endif()
 
-option (ENABLE_INTRINSICS "Build using compiler intrinsics for atomic ops" OFF)
 if (ENABLE_INTRINSICS)
    message(STATUS "Using compiler intrinsics for atomic ops")
    add_definitions(-DZMQ_HAVE_ATOMIC_INTRINSICS)
@@ -91,20 +199,8 @@ endif()
 set(pkg_config_libs_private "")
 set(pkg_config_names_private "")
 
-option(WITH_OPENPGM "Build with support for OpenPGM" OFF)
-option(WITH_VMCI "Build with support for VMware VMCI socket" OFF)
 
-if(APPLE)
-  option(ZMQ_BUILD_FRAMEWORK "Build as OS X framework" OFF)
-endif()
 
-# Enable webSocket transport
-if (ENABLE_DRAFTS)
-  option(ENABLE_WS "Enable WebSocket transport" ON)
-else()
-  option(ENABLE_WS "Enable WebSocket transport" OFF)
-endif()
-option(WITH_NSS "Use NSS instead of builtin sha1" OFF)
 
 if (ENABLE_WS)
   list(APPEND sources
@@ -151,7 +247,6 @@ if (ENABLE_WS)
 endif()
 
 if(NOT MSVC)
-  option(WITH_LIBBSD "Use libbsd instead of builtin strlcpy" ON)
   if (WITH_LIBBSD)
     pkg_check_modules(LIBBSD "libbsd")
     if (LIBBSD_FOUND)
@@ -169,12 +264,6 @@ if(NOT MSVC)
 endif()
 
 
-# Select curve encryption library, defaults to tweetnacl
-# To use libsodium instead, use --with-libsodium(must be installed)
-# To disable curve, use --disable-curve
-
-option(WITH_LIBSODIUM "Use libsodium instead of built-in tweetnacl" OFF)
-option(ENABLE_CURVE "Enable CURVE security" ON)
 
 if(NOT ENABLE_CURVE)
   message(STATUS "CURVE security is disabled")
@@ -198,17 +287,11 @@ endif()
 
 set(SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 
-if(EXISTS "${SOURCE_DIR}/.git")
-  option(ENABLE_DRAFTS "Build and install draft classes and methods" ON)
-else()
-  option(ENABLE_DRAFTS "Build and install draft classes and methods" OFF)
-endif()
+
 if(ENABLE_DRAFTS)
-  option (ENABLE_RADIX_TREE "Use radix tree implementation to manage subscriptions" ON)
   add_definitions(-DZMQ_BUILD_DRAFT_API)
   set(pkg_config_defines "-DZMQ_BUILD_DRAFT_API=1")
 else()
-  option (ENABLE_RADIX_TREE "Use radix tree implementation to manage subscriptions" OFF)
   set(pkg_config_defines "")
 endif()
 
@@ -217,7 +300,6 @@ if (ENABLE_RADIX_TREE)
    add_definitions(-DZMQ_USE_RADIX_TREE)
 endif()
 
-option(WITH_MILITANT "Enable militant assertions" OFF)
 if(WITH_MILITANT)
   add_definitions(-DZMQ_ACT_MILITANT)
 endif()
@@ -381,12 +463,12 @@ else()
 endif()
 message(STATUS "Using ${ZMQ_CACHELINE_SIZE} bytes alignment for lock-free data structures")
 
-if(NOT CYGWIN)
+if(NOT CYGWIN AND NOT ZEPHYR)
   # TODO cannot we simply do 'if(WIN32) set(ZMQ_HAVE_WINDOWS ON)' or similar?
   check_include_files(windows.h ZMQ_HAVE_WINDOWS)
 endif()
 
-if(NOT WIN32)
+if(NOT WIN32 AND NOT ZEPHYR)
     set(ZMQ_HAVE_IPC 1)
 else()
     check_include_files("winsock2.h;afunix.h" ZMQ_HAVE_IPC)
@@ -480,7 +562,7 @@ if(WIN32 AND NOT CYGWIN)
   endif()
 endif()
 
-if(NOT MSVC)
+if(NOT MSVC AND NOT ZEPHYR)
   set(CMAKE_REQUIRED_LIBRARIES rt)
   check_cxx_symbol_exists(clock_gettime time.h HAVE_CLOCK_GETTIME)
   set(CMAKE_REQUIRED_LIBRARIES)
@@ -490,6 +572,7 @@ if(NOT MSVC)
   check_cxx_symbol_exists(mkdtemp stdlib.h HAVE_MKDTEMP)
   check_cxx_symbol_exists(accept4 sys/socket.h HAVE_ACCEPT4)
   check_cxx_symbol_exists(strnlen string.h HAVE_STRNLEN)
+  #elseif(ZEPHYR)
 else()
   set(HAVE_STRNLEN 1)
 endif()
@@ -497,7 +580,6 @@ endif()
 add_definitions(-D_REENTRANT -D_THREAD_SAFE)
 add_definitions(-DZMQ_CUSTOM_PLATFORM_HPP)
 
-option(ENABLE_EVENTFD "Enable/disable eventfd" ZMQ_HAVE_EVENTFD)
 
 macro(zmq_check_cxx_flag_prepend flag)
   check_cxx_compiler_flag("${flag}" HAVE_FLAG_${flag})
@@ -507,7 +589,6 @@ macro(zmq_check_cxx_flag_prepend flag)
   endif()
 endmacro()
 
-option(ENABLE_ANALYSIS "Build with static analysis(make take very long)" OFF)
 
 if(MSVC)
   if(ENABLE_ANALYSIS)
@@ -547,8 +628,6 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   zmq_check_cxx_flag_prepend("-Wextra")
 endif()
 
-option(LIBZMQ_PEDANTIC "" ON)
-option(LIBZMQ_WERROR "" OFF)
 
 # TODO: why is -Wno-long-long defined differently than in configure.ac?
 if(NOT MSVC)
@@ -627,10 +706,11 @@ if(NOT CMAKE_CROSSCOMPILING AND NOT MSVC)
   zmq_check_getrandom()
 endif()
 
+
 if(CMAKE_SYSTEM_NAME MATCHES "Linux"
   OR CMAKE_SYSTEM_NAME MATCHES "GNU/kFreeBSD"
   OR CMAKE_SYSTEM_NAME MATCHES "GNU/Hurd"
-  OR CYGWIN)
+  OR CYGWIN OR ZEPHYR)
   add_definitions(-D_GNU_SOURCE)
 elseif(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
   add_definitions(-D__BSD_VISIBLE)
@@ -1125,7 +1205,6 @@ if(MSVC)
     DEPENDS ${nsis-template})
 endif()
 
-option (WITH_DOCS "Build html docs" ON)
 if (WITH_DOCS)
   file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc)
   file(GLOB docs RELATIVE ${CMAKE_CURRENT_BINARY_DIR}/ "${CMAKE_CURRENT_SOURCE_DIR}/doc/*.txt")
@@ -1161,7 +1240,6 @@ if(ZMQ_BUILD_FRAMEWORK)
   COMMENT "Perf tools")
 endif()
 
-option(ENABLE_PRECOMPILED "Enable precompiled headers, if possible" ON)
 if(MSVC AND ENABLE_PRECOMPILED)
   # default for all sources is to use precompiled headers
   foreach(source ${sources})
@@ -1183,8 +1261,40 @@ endif()
 
 #-----------------------------------------------------------------------------
 # output
-option(BUILD_SHARED "Whether or not to build the shared object"  ON)
-option(BUILD_STATIC "Whether or not to build the static archive" ON)
+
+if(ZEPHYR)
+  add_definitions(-DZEPHYR_VERSION=${KERNEL_VERSION_STRING})
+
+
+  zephyr_interface_library_named(ZEROMQ)
+
+  target_include_directories(ZEROMQ INTERFACE src)
+  target_include_directories(ZEROMQ INTERFACE include)
+  target_include_directories(ZEROMQ INTERFACE ${CMAKE_SOURCE_DIR}/src)
+  target_include_directories(ZEROMQ INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
+
+  zephyr_include_directories(include)
+
+  message("TARGETS=====================================================")
+  message(STATUS "GlobalTargetList: ${ZEPHYR_CURRENT_LIBRARY} ")
+  message("TARGETS=====================================================")
+
+  #set(cxx-zephyr-sources ${cxx-sources})
+  #list(TRANSFORM cxx-zephyr-sources PREPEND src/)
+  #list(APPEND cxx-zephyr-sources ${CMAKE_CURRENT_BINARY_DIR}/platform.hpp)
+
+  zephyr_library()
+  zephyr_library_sources(
+    ${sources}
+  )
+
+  zephyr_library_link_libraries(ZEROMQ)
+  target_link_libraries(ZEROMQ INTERFACE zephyr_interface posix_subsys)
+  message("TARGETS=====================================================")
+  message(STATUS "GlobalTargetList: ${ZEPHYR_CURRENT_LIBRARY} ")
+  message("TARGETS=====================================================")
+  return()
+endif()
 
 list(APPEND target_outputs "")
 
@@ -1442,7 +1552,6 @@ endif()
 #-----------------------------------------------------------------------------
 # tests
 
-option(BUILD_TESTS "Whether or not to build the tests" ON)
 
 set(ZMQ_BUILD_TESTS ${BUILD_TESTS} CACHE BOOL "Build the tests for ZeroMQ")
 
@@ -1538,7 +1647,6 @@ if(BUILD_SHARED OR BUILD_STATIC)
     DESTINATION ${ZEROMQ_CMAKECONFIG_INSTALL_DIR})
 endif()
 
-option(ENABLE_CPACK "Enables cpack rules" ON)
 if(MSVC AND ENABLE_CPACK)
   if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
     set(CMAKE_INSTALL_DEBUG_LIBRARIES_ONLY TRUE)
