@@ -593,8 +593,11 @@ zmq::session_base_t::connecter_factory_map_t
 
 zmq::session_base_t::start_connecting_entry_t
   zmq::session_base_t::_start_connecting_entries[] = {
+#if !defined ZMQ_HAVE_ZEPHYR
     start_connecting_entry_t (protocol_name::udp,
                               &zmq::session_base_t::start_connecting_udp),
+#endif
+
 #if defined ZMQ_HAVE_OPENPGM
     start_connecting_entry_t ("pgm",
                               &zmq::session_base_t::start_connecting_pgm),
@@ -777,6 +780,7 @@ void zmq::session_base_t::start_connecting_norm (io_thread_t *io_thread_)
 }
 #endif
 
+#if !defined ZMQ_HAVE_ZEPHYR
 void zmq::session_base_t::start_connecting_udp (io_thread_t * /*io_thread_*/)
 {
     zmq_assert (options.type == ZMQ_DISH || options.type == ZMQ_RADIO
@@ -793,3 +797,4 @@ void zmq::session_base_t::start_connecting_udp (io_thread_t * /*io_thread_*/)
 
     send_attach (this, engine);
 }
+#endif

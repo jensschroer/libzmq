@@ -77,6 +77,7 @@ int zmq::tune_tcp_socket (fd_t s_)
     return rc;
 }
 
+#if !defined(__ZEPHYR__)
 int zmq::set_tcp_send_buffer (fd_t sockfd_, int bufsize_)
 {
     const int rc =
@@ -94,6 +95,7 @@ int zmq::set_tcp_receive_buffer (fd_t sockfd_, int bufsize_)
     assert_success_or_recoverable (sockfd_, rc);
     return rc;
 }
+#endif
 
 int zmq::tune_tcp_keepalives (fd_t s_,
                               int keepalive_,
@@ -387,12 +389,13 @@ zmq::fd_t zmq::tcp_open_socket (const char *address_,
     if (!options_.bound_device.empty ())
         if (bind_to_device (s, options_.bound_device) == -1)
             goto setsockopt_error;
-
+#if !defined(__ZEPHYR__)
     //  Set the socket buffer limits for the underlying socket.
     if (options_.sndbuf >= 0)
         set_tcp_send_buffer (s, options_.sndbuf);
     if (options_.rcvbuf >= 0)
         set_tcp_receive_buffer (s, options_.rcvbuf);
+#endif
 
     return s;
 

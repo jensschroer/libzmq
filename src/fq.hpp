@@ -33,6 +33,11 @@
 #include "array.hpp"
 #include "blob.hpp"
 
+
+#if defined __ZEPHYR__
+#undef _current
+#endif
+
 namespace zmq
 {
 class msg_t;

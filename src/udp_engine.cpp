@@ -27,6 +27,7 @@ You should have received a copy of the GNU Lesser General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+
 #include "precompiled.hpp"
 
 #if !defined ZMQ_HAVE_WINDOWS
@@ -55,6 +56,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <TargetConditionals.h>
 #endif
 
+#if !defined ZMQ_HAVE_ZEPHYR
 zmq::udp_engine_t::udp_engine_t (const options_t &options_) :
     _plugged (false),
     _fd (-1),
@@ -627,3 +629,5 @@ bool zmq::udp_engine_t::restart_input ()
 
     return true;
 }
+
+#endif

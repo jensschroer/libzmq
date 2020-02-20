@@ -33,6 +33,10 @@
 #include <stdlib.h>
 #include <vector>
 
+#if defined __ZEPHYR__
+#include <sys/select.h>
+#endif
+
 #include "macros.hpp"
 #include "stdint.hpp"
 #include "platform.hpp"

@@ -34,6 +34,10 @@
 #include <unistd.h>
 #endif
 
+#if defined __ZEPHYR__
+#include <random/rand32.h>
+#endif
+
 #include "random.hpp"
 #include "stdint.hpp"
 #include "clock.hpp"
@@ -48,21 +52,30 @@
 
 void zmq::seed_random ()
 {
+#if !defined __ZEPHYR__
 #if defined ZMQ_HAVE_WINDOWS
     const int pid = static_cast<int> (GetCurrentProcessId ());
 #else
     int pid = static_cast<int> (getpid ());
 #endif
     srand (static_cast<unsigned int> (clock_t::now_us () + pid));
+#else
+    //will use the zephyr entroy generator
+    return;
+#endif
 }
 
 uint32_t zmq::generate_random ()
 {
+#if defined __ZEPHYR__
+    return sys_rand32_get();
+#else
     //  Compensate for the fact that rand() returns signed integer.
     const uint32_t low = static_cast<uint32_t> (rand ());
     uint32_t high = static_cast<uint32_t> (rand ());
     high <<= (sizeof (int) * 8 - 1);
     return high | low;
+#endif
 }
 
 //  When different threads have their own context the file descriptor

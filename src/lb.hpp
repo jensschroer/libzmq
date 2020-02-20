@@ -32,6 +32,10 @@
 
 #include "array.hpp"
 
+#ifdef __ZEPHYR__
+#undef _current
+#endif
+
 namespace zmq
 {
 class msg_t;

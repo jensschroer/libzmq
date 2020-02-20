@@ -2,6 +2,7 @@
 #ifndef __ZMQ_UDP_ENGINE_HPP_INCLUDED__
 #define __ZMQ_UDP_ENGINE_HPP_INCLUDED__
 
+#if !defined(ZMQ_HAVE_ZEPHYR)
 #include "io_object.hpp"
 #include "i_engine.hpp"
 #include "address.hpp"
@@ -88,4 +89,5 @@ class udp_engine_t ZMQ_FINAL : public io_object_t, public i_engine
 };
 }
 
+#endif
 #endif

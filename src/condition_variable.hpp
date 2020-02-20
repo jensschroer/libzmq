@@ -235,7 +235,7 @@ class condition_variable_t
     {
         pthread_condattr_t attr;
         pthread_condattr_init (&attr);
-#if !defined(ZMQ_HAVE_OSX) && !defined(ANDROID_LEGACY)
+#if !defined(ZMQ_HAVE_OSX) && !defined(ANDROID_LEGACY) && !defined(__ZEPHYR__)
         pthread_condattr_setclock (&attr, CLOCK_MONOTONIC);
 #endif
         int rc = pthread_cond_init (&_cond, &attr);

@@ -130,4 +130,7 @@
 #cmakedefine ZMQ_HAVE_WINDOWS
 #cmakedefine ZMQ_HAVE_WINDOWS_UWP
 
+#if defined __ZEPHYR__
+  #define ZMQ_HAVE_ZEPHYR
+#endif
 #endif

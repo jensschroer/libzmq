@@ -27,6 +27,14 @@ int zmq::ip_addr_t::family () const
 
 bool zmq::ip_addr_t::is_multicast () const
 {
+#if defined __ZEPHYR__
+    if (family () == AF_INET) {
+        //  IPv4 Multicast: address MSBs are 1110
+        //  Range: 224.0.0.0 - 239.255.255.255
+        return net_ipv4_is_addr_mcast(&ipv4.sin_addr);
+    }
+    return net_ipv6_is_addr_mcast(&ipv6.sin6_addr);
+#else
     if (family () == AF_INET) {
         //  IPv4 Multicast: address MSBs are 1110
         //  Range: 224.0.0.0 - 239.255.255.255
@@ -34,6 +42,7 @@ bool zmq::ip_addr_t::is_multicast () const
     }
     //  IPv6 Multicast: ff00::/8
     return IN6_IS_ADDR_MULTICAST (&ipv6.sin6_addr) != 0;
+#endif
 }
 
 uint16_t zmq::ip_addr_t::port () const

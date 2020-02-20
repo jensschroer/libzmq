@@ -33,6 +33,10 @@
 #include "err.hpp"
 #include "msg.hpp"
 
+#if defined __ZEPHYR__
+#undef _current
+#endif
+
 zmq::lb_t::lb_t () : _active (0), _current (0), _more (false), _dropping (false)
 {
 }

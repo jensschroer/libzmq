@@ -206,6 +206,7 @@ int zmq::get_peer_ip_address (fd_t sockfd_, std::string &ip_addr_)
 
 void zmq::set_ip_type_of_service (fd_t s_, int iptos_)
 {
+#if !defined(__ZEPHYR__)
     int rc = setsockopt (s_, IPPROTO_IP, IP_TOS,
                          reinterpret_cast<char *> (&iptos_), sizeof (iptos_));
 
@@ -225,6 +226,9 @@ void zmq::set_ip_type_of_service (fd_t s_, int iptos_)
     if (rc == -1) {
         errno_assert (errno == ENOPROTOOPT || errno == EINVAL);
     }
+#endif
+#else
+    return;
 #endif
 }
 
@@ -716,6 +720,49 @@ try_tcpip:
 
     rc = getsockname (listener, (struct sockaddr *) &lcladdr,
                       (int *) &lcladdr_len);
+    errno_assert (rc != -1);
+
+    rc = listen (listener, 1);
+    errno_assert (rc != -1);
+
+    *w_ = open_socket (AF_INET, SOCK_STREAM, 0);
+    errno_assert (*w_ != -1);
+
+    rc = setsockopt (*w_, IPPROTO_TCP, TCP_NODELAY, (char *) &on, sizeof on);
+    errno_assert (rc != -1);
+
+    rc = connect (*w_, (struct sockaddr *) &lcladdr, sizeof lcladdr);
+    errno_assert (rc != -1);
+
+    *r_ = accept (listener, NULL, NULL);
+    errno_assert (*r_ != -1);
+
+    close (listener);
+
+    return 0;
+#elif defined __ZEPHYR__
+    struct sockaddr_in lcladdr;
+    memset (&lcladdr, 0, sizeof lcladdr);
+    lcladdr.sin_family = AF_INET;
+    //lcladdr.sin_addr.s_addr = htonl (INADDR_LOOPBACK);
+    lcladdr.sin_addr.s_addr = htonl (0x7f000001);
+    lcladdr.sin_port = 0;
+
+    int listener = open_socket (AF_INET, SOCK_STREAM, 0);
+    errno_assert (listener != -1);
+
+    int on = 1;
+    int rc =
+      setsockopt (listener, IPPROTO_TCP, TCP_NODELAY, (char *) &on, sizeof on);
+    errno_assert (rc != -1);
+
+    rc = bind (listener, (struct sockaddr *) &lcladdr, sizeof lcladdr);
+    errno_assert (rc != -1);
+
+    socklen_t lcladdr_len = sizeof lcladdr;
+
+    rc = getsockname (listener, (struct sockaddr *) &lcladdr,
+                      (socklen_t *) &lcladdr_len);
     errno_assert (rc != -1);
 
     rc = listen (listener, 1);

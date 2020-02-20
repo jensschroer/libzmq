@@ -235,7 +235,7 @@ void zmq::thread_t::
 extern "C" {
 static void *thread_routine (void *arg_)
 {
-#if !defined ZMQ_HAVE_OPENVMS && !defined ZMQ_HAVE_ANDROID
+#if !defined ZMQ_HAVE_OPENVMS && !defined ZMQ_HAVE_ANDROID && !defined __ZEPHYR__
     //  Following code will guarantee more predictable latencies as it'll
     //  disallow any signal handling in the I/O thread.
     sigset_t signal_set;

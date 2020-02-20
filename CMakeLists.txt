@@ -3,7 +3,7 @@ project(ZeroMQ)
 
 # Detect the platform reliably
 if(ZEPHYR_BASE)
-    SET(ZEPHYR YES)
+    set(ZEPHYR YES)    
 endif()
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL Darwin)
@@ -134,7 +134,7 @@ if (ZEPHYR)
   set(BUILD_TESTS OFF)
   set(ENABLE_CPACK OFF)
   set(ZMQ_HAVE_IPC OFF)
-  
+  set(ZMQ_CV_IMPL "pthreads")
 endif()
 
   
@@ -710,7 +710,7 @@ endif()
 if(CMAKE_SYSTEM_NAME MATCHES "Linux"
   OR CMAKE_SYSTEM_NAME MATCHES "GNU/kFreeBSD"
   OR CMAKE_SYSTEM_NAME MATCHES "GNU/Hurd"
-  OR CYGWIN OR ZEPHYR)
+  OR CYGWIN)
   add_definitions(-D_GNU_SOURCE)
 elseif(CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
   add_definitions(-D__BSD_VISIBLE)
@@ -1265,7 +1265,6 @@ endif()
 if(ZEPHYR)
   add_definitions(-DZEPHYR_VERSION=${KERNEL_VERSION_STRING})
 
-
   zephyr_interface_library_named(ZEROMQ)
 
   target_include_directories(ZEROMQ INTERFACE src)
@@ -1274,10 +1273,6 @@ if(ZEPHYR)
   target_include_directories(ZEROMQ INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
 
   zephyr_include_directories(include)
-
-  message("TARGETS=====================================================")
-  message(STATUS "GlobalTargetList: ${ZEPHYR_CURRENT_LIBRARY} ")
-  message("TARGETS=====================================================")
 
   #set(cxx-zephyr-sources ${cxx-sources})
   #list(TRANSFORM cxx-zephyr-sources PREPEND src/)
@@ -1289,10 +1284,8 @@ if(ZEPHYR)
   )
 
   zephyr_library_link_libraries(ZEROMQ)
+  #target_link_libraries(ZEROMQ INTERFACE zephyr_interface)
   target_link_libraries(ZEROMQ INTERFACE zephyr_interface posix_subsys)
-  message("TARGETS=====================================================")
-  message(STATUS "GlobalTargetList: ${ZEPHYR_CURRENT_LIBRARY} ")
-  message("TARGETS=====================================================")
   return()
 endif()
 

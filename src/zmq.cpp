@@ -67,7 +67,7 @@
 // XSI vector I/O
 #if defined ZMQ_HAVE_UIO
 #include <sys/uio.h>
-#else
+#elif !defined __ZEPHYR__
 struct iovec
 {
     void *iov_base;
